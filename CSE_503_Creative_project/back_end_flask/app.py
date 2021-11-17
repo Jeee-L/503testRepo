@@ -22,8 +22,10 @@ def register():
         'name': username_register,
         'password': password_register
     }
-
-    db_check = user_collection.find_one(user_info_to_insert)
+    # check user existed or not
+    # https://docs.mongodb.com/manual/reference/method/db.collection.findOne/
+    db_check = user_collection.find_one({}, {username_register: 1})
+    print(db_check)
     if db_check is None:
         db_insert = user_collection.insert_one(user_info_to_insert)
         return jsonify({

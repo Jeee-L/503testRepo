@@ -7,6 +7,7 @@ import login from "./components/login.vue";
 </script>
 
 <template>
+
   <register/>
   <login/>
 </template>

@@ -14,6 +14,7 @@
 <script>
 import axios from 'axios';
 export default {
+  // refer to https://5balloons.info/post-form-data-to-api-using-axios-in-vuejs/
   name: "login",
   data() {
     return {

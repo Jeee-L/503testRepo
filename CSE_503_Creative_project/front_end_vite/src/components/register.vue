@@ -23,6 +23,7 @@ export default {
         password_register: "",
         register_message: ""
       }
+
     }
   },
   methods: {
