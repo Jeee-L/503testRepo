@@ -4,12 +4,16 @@
 
 import register from "./components/register.vue";
 import login from "./components/login.vue";
+import display_all_post from "./components/display_all_post.vue";
+import add_post from "./components/add_post.vue";
+
 </script>
 
 <template>
-
   <register/>
   <login/>
+  <display_all_post/>
+  <add_post/>
 </template>
 
 <style>

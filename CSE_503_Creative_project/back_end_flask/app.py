@@ -11,7 +11,7 @@ mongo = PyMongo(app)
 # get all collections
 # refer to https://www.w3schools.com/python/python_mongodb_insert.asp
 user_collection = mongo.db.USER
-
+post_collection = mongo.db.ALL_POST
 # register
 @app.route("/register", methods=['POST', 'GET'])
 def register():
