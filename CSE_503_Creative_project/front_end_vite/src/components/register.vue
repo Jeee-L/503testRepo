@@ -1,4 +1,5 @@
 <template>
+
   <strong>Register</strong>
   <br>
   <input type="text" v-model = "form.username_register"  placeholder="username_reg">
@@ -7,7 +8,7 @@
   <br>
   <input type="button" id = "register_button" @click= "user_register" value = "register">
   <br>
-  <strong>{{ form.register_message }}</strong>
+  <strong>{{ register_message }}</strong>
   <br>
 </template>
 
@@ -20,10 +21,9 @@ export default {
     return {
       form: {
         username_register: "",
-        password_register: "",
-        register_message: ""
-      }
-
+        password_register: ""
+      },
+      register_message: ""
     }
   },
   methods: {
@@ -31,7 +31,7 @@ export default {
       axios
           .post('http://127.0.0.1:5000/register', this.form)
           .then(res => {
-            this.form.register_message = res.data.message;
+            this.register_message = res.data.message;
           })
           .catch(error => {
             console.log(error)
@@ -40,3 +40,6 @@ export default {
   }
 }
 </script>
+<style scoped>
+
+</style>

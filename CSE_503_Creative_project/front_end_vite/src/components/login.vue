@@ -7,7 +7,7 @@
   <br>
   <input type="button" id = "register_button" @click= "user_login" value = "login">
   <br>
-  <strong>{{ form.message_login }}</strong>
+  <strong>{{ message_login }}</strong>
   <br>
 </template>
 
@@ -20,9 +20,9 @@ export default {
     return {
       form: {
         username_login: "",
-        password_login: "",
-        message_login: ""
-      }
+        password_login: ""
+      },
+      message_login: ""
     }
   },
   methods: {
@@ -30,7 +30,7 @@ export default {
       axios
           .post('http://127.0.0.1:5000/login', this.form)
           .then(res => {
-            this.form.message_login = res.data.message;
+            this.message_login = res.data.message;
           })
           .catch(error => {
             console.log(error)
@@ -39,3 +39,8 @@ export default {
   }
 }
 </script>
+
+
+<style scoped>
+
+</style>

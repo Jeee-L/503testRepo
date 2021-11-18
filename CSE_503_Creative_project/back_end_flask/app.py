@@ -24,9 +24,9 @@ def register():
     }
     # check user existed or not
     # https://docs.mongodb.com/manual/reference/method/db.collection.findOne/
-    db_check = user_collection.find_one({}, {username_register: 1})
+    db_check = user_collection.find({"name": username_register}).count() > 0
     print(db_check)
-    if db_check is None:
+    if not db_check:
         db_insert = user_collection.insert_one(user_info_to_insert)
         return jsonify({
             'success': True,
@@ -61,6 +61,51 @@ def login():
             'message': 'wrong password or user not exist'
         })
 
+# add post
+@app.route("/add_post", methods=['POST', 'GET'])
+def add_post():
+    post_data = request.get_json()
+    add_post_title = post_data.get('add_post_title')
+    picked_tag = post_data.get('picked_tag')
+    add_post_content = post_data.get('add_post_content')
+    post_info_to_insert = {
+        'post_title': add_post_title,
+        'post_tag': picked_tag,
+        'post_content': add_post_content
+    }
+    db_insert = post_collection.insert_one(post_info_to_insert)
+    return jsonify({
+        'success': True,
+        'message': 'post successfully added'
+    })
+
+
+# display all post
+@app.route("/display_all_post", methods=['POST', 'GET'])
+def display_all_post():
+    post_data = request.get_json()
+    # add_post_title = post_data.get('add_post_title')
+    # picked_tag = post_data.get('picked_tag')
+    # add_post_content = post_data.get('add_post_content')
+    # post_info_to_insert = {
+    #     'post_title': add_post_title,
+    #     'tag': picked_tag,
+    #     'post_content': add_post_content
+    # }
+    all_document_cursor = post_collection.find({})
+    all_posts = []
+
+    for every_post in all_document_cursor:
+        every_post_info = every_post
+        del every_post_info["_id"]
+        # print(every_post_info)
+        all_posts.append(every_post_info)
+
+    return jsonify({
+        'success': True,
+        'message': 'All post successfully displayed',
+        "all_posts": all_posts
+    })
 
 ##88009
 # @app.route('/')
