@@ -46,6 +46,9 @@ export default {
       this.$bus.on('update_after_login', () => {
           this.current_login_or_not = true
       })
+      if (sessionStorage.getItem("current_login_or_not")){
+         this.current_login_or_not = true
+      }
   }
 }
 </script>
