@@ -24,7 +24,6 @@ export default {
       all_posts: {},
       message_display_all_post: ""
     }
-
   },
   mounted() {
     axios
@@ -36,19 +35,20 @@ export default {
         })
         .catch(error => {
           console.log(error)
-        })
+        });
+
+
     this.$bus.on('update_after_add_post', () => {
       axios
         .post('http://127.0.0.1:5000/display_all_post')
         .then(res => {
           this.all_posts = res.data.all_posts;
           this.message_display_all_post = res.data.message;
-
         })
         .catch(error => {
           console.log(error)
         })
-    })
+    });
   }
 }
 </script>

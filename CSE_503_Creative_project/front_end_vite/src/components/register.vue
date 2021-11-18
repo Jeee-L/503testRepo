@@ -1,4 +1,5 @@
 <template>
+  <!--  show before logged in, not show after logged in -->
   <div v-show = "!current_login_or_not">
       <strong>Register</strong>
       <br>
@@ -15,6 +16,7 @@
 </template>
 
 <script>
+// import dependencies
 import axios from "axios";
 export default {
   name: "register",
@@ -46,6 +48,7 @@ export default {
       this.$bus.on('update_after_login', () => {
           this.current_login_or_not = true
       })
+
       if (sessionStorage.getItem("current_login_or_not")){
          this.current_login_or_not = true
       }
