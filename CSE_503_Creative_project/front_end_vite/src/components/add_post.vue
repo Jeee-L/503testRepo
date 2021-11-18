@@ -46,6 +46,7 @@ export default {
           .post('http://127.0.0.1:5000/add_post', this.form)
           .then(res => {
             this.message_add_post = res.data.message;
+            this.$bus.emit('update_after_add_post');
           })
           .catch(error => {
             console.log(error)
