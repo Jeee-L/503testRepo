@@ -43,17 +43,18 @@ def register():
 @app.route("/login", methods=['POST', 'GET'])
 def login():
     post_data = request.get_json()
-    username_register = post_data.get('username_login')
-    password_register = post_data.get('password_login')
+    username_login = post_data.get('username_login')
+    password_login = post_data.get('password_login')
     user_info_to_check = {
-        'name': username_register,
-        'password': password_register
+        'name': username_login,
+        'password': password_login
     }
     db_check = user_collection.find_one(user_info_to_check)
     if db_check is not None:
         return jsonify({
             'success': True,
-            'message': 'successfully logged in '
+            'message': 'successfully logged in',
+            'current_username': username_login
         })
     else:
         return jsonify({

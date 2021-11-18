@@ -27,18 +27,17 @@ export default {
 
   },
   mounted() {
-      axios
-          .post('http://127.0.0.1:5000/display_all_post')
-          .then(res => {
-            this.all_posts = res.data.all_posts;
-            this.message_display_all_post = res.data.message;
-          })
-          .catch(error => {
-            console.log(error)
-          })
+    axios
+        .post('http://127.0.0.1:5000/display_all_post')
+        .then(res => {
+          this.all_posts = res.data.all_posts;
+          this.message_display_all_post = res.data.message;
+
+        })
+        .catch(error => {
+          console.log(error)
+        })
   }
-
-
 }
 </script>
 
