@@ -1,5 +1,5 @@
 <template>
-  <div id="add_post">
+  <div id="add_post" v-show = "current_login_or_not">
     <h1>Add Post</h1>
     <input type="text" v-model = "form.add_post_title"  placeholder="add_post_title" />
     <br>
@@ -38,7 +38,8 @@ export default {
         add_post_content: "",
         creator: ""
       },
-      message_add_post: ""
+      message_add_post: "",
+      current_login_or_not: false
     }
   },
   methods: {
@@ -54,6 +55,15 @@ export default {
             console.log(error)
           })
     }
+  },
+  mounted() {
+      this.$bus.on('update_after_login', () => {
+          this.current_login_or_not = true
+      })
+
+      if (sessionStorage.getItem("current_login_or_not")){
+         this.current_login_or_not = true
+      }
   }
 }
 </script>

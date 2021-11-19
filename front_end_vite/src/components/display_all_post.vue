@@ -6,7 +6,11 @@
     <ul id = "all_post_display_block_list_main">
       <li v-for = "every_post in all_posts">
         <div>
-          <strong>{{ "Title: " + every_post["post_title"] + "; Tag: " + every_post["post_tag"] + "; Created Time: " + every_post["time"] }}</strong>
+          <strong>{{ "Title: " + every_post["post_title"] + "; Tag: " + every_post["post_tag"]   }}</strong>
+          <br>
+          <strong>{{every_post["time"] }}</strong>
+          <br>
+          <strong>{{"creator: " + every_post["creator"] }}</strong>
           <p>
             {{  every_post["post_content"] }}
           </p>
@@ -47,6 +51,7 @@ export default {
             .then(res => {
               console.log(res.data);
               // refresh page, reference: https://www.jb51.net/article/215889.htm
+              // https://www.w3schools.com/jsref/met_loc_reload.asp
               location.reload();
               this.operation_message = res.data.message;
             })
@@ -73,6 +78,7 @@ export default {
         .post('http://127.0.0.1:5000/display_all_post')
         .then(res => {
           this.all_posts = res.data.all_posts;
+          console.log(res.data.all_posts)
           this.message_display_all_post = res.data.message;
           this.current_user = sessionStorage.getItem("current_username");
         })
