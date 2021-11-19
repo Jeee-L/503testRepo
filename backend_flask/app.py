@@ -15,6 +15,8 @@ mongo = PyMongo(app)
 # refer to https://www.w3schools.com/python/python_mongodb_insert.asp
 user_collection = mongo.db.USER
 post_collection = mongo.db.ALL_POST
+
+
 # register
 @app.route("/register", methods=['POST', 'GET'])
 def register():
@@ -23,7 +25,9 @@ def register():
     password_register = post_data.get('password_register')
     user_info_to_insert = {
         'name': username_register,
-        'password': password_register
+        'password': password_register,
+        'friend_list': [],
+        'notification_list': []
     }
     # check user existed or not
     # https://docs.mongodb.com/manual/reference/method/db.collection.findOne/
@@ -64,6 +68,7 @@ def login():
             'success': False,
             'message': 'wrong password or user not exist'
         })
+
 
 # add post
 @app.route("/add_post", methods=['POST', 'GET'])
@@ -116,14 +121,16 @@ def display_all_post():
         "all_posts": all_posts
     })
 
+
 @app.route("/delete_post", methods=['POST', 'GET'])
 def delete_post():
     post_data = request.get_json()
     post_collection.remove({"_id": ObjectId(post_data['delete_id'])})
     return jsonify({
         'success': True,
-        'message': 'Delete post successfully',
+        'message': 'Delete post successfully'
     })
+
 
 @app.route("/edit_post", methods=['POST', 'GET'])
 def edit_post():
@@ -139,8 +146,108 @@ def edit_post():
     })
     return jsonify({
         'success': True,
-        'message': 'Edit post successfully',
+        'message': 'Edit post successfully'
     })
+
+
+@app.route("/send_friend_request", methods=['POST', 'GET'])
+def send_friend_request():
+    post_data = request.get_json()
+    username_to_send_friend_request = post_data["username_to_send_friend_request"]
+    username_to_receive_friend_request = post_data["username_to_receive_friend_request"]
+    # print(post_data)
+    user_collection.update({"name": username_to_receive_friend_request}, {'$push':
+        {'notification_list': username_to_send_friend_request}
+    })
+    return jsonify({
+        'success': True,
+        'message': 'send friend request successfully'
+    })
+
+
+@app.route("/notification", methods=['POST', 'GET'])
+def notification():
+    post_data = request.get_json()
+    username_to_receive_notification = post_data["current_user"]
+    # print(post_data)
+    current_user_info = user_collection.find_one({"name": username_to_receive_notification})
+    notification_list = current_user_info["notification_list"]
+
+    return jsonify({
+        'success': True,
+        'message': 'send friend request successfully',
+        "notification_list": notification_list
+    })
+
+
+@app.route("/refuse", methods=['POST', 'GET'])
+def refuse():
+    post_data = request.get_json()
+    refuse_username = post_data["refuse_username"]
+    current_user = post_data["current_user"]
+    current_user_info = user_collection.update({"name": current_user},
+        {'$pull':
+            {"notification_list": refuse_username}
+        })
+    return jsonify({
+        'success': True,
+        'message': 'Refused friend request successfully'
+    })
+
+
+@app.route("/accept", methods=['POST', 'GET'])
+def accept():
+    post_data = request.get_json()
+    accept_username = post_data["accept_username"]
+    current_user = post_data["current_user"]
+    user_collection.update({"name": current_user},
+        {'$pull':
+            {"notification_list" : accept_username}
+        })
+    user_collection.update({"name": current_user}, {'$push':
+        {'friend_list': accept_username}
+    })
+    user_collection.update({"name": accept_username}, {'$push':
+        {'friend_list': current_user}
+    })
+    return jsonify({
+        'success': True,
+        'message': 'accept friend request successfully'
+    })
+
+
+@app.route("/display_friend_list", methods=['POST', 'GET'])
+def display_friend_list():
+    post_data = request.get_json()
+    current_user = post_data["current_user"]
+
+    user_info = user_collection.find_one(({"name": current_user}))
+    friend_list = user_info["friend_list"]
+    return jsonify({
+        'success': True,
+        'message': 'Display friend list successfully',
+        'friend_list' : friend_list
+    })
+
+
+@app.route("/unfriend", methods=['POST', 'GET'])
+def unfriend():
+    post_data = request.get_json()
+    username_to_unfriend = post_data["username_to_unfriend"]
+    current_user = post_data["current_user"]
+    user_collection.update({"name": current_user},
+        {'$pull':
+            {"friend_list": username_to_unfriend}
+        })
+    user_collection.update({"name": username_to_unfriend},
+        {'$pull':
+            {'friend_list': current_user}
+        })
+    return jsonify({
+        'success': True,
+        'message': 'Unfriend successfully'
+    })
+
 
 ##88009
 # @app.route('/')
@@ -149,15 +256,6 @@ def edit_post():
 #     for r in dbfindresult:
 #         print(r['name'])
 #     return "Hello world!"
-
-# # @app.route("/test", methods=['GET'])
-# # def test():
-# #     post_data = request.get_json()
-# #     dbfindresult = mongo.db.testdb.find()
-# #     for r in dbfindresult:
-# #         result = r['name']
-# #     print(result)
-# #     return (result)
 
 if __name__ == '__main__':
     app.run()

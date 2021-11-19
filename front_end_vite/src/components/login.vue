@@ -9,7 +9,7 @@
       <input type="button" id = "register_button" @click= "user_login" value = "login">
       <br>
       <strong>{{ message_login }}</strong>
-      <br>
+      <hr>
   </div>
 
 </template>
@@ -50,7 +50,7 @@ export default {
   },
   mounted() {
     this.current_login_or_not = sessionStorage.getItem("current_login_or_not");
-    console.log(this.current_login_or_not)
+    // console.log(this.current_login_or_not)
   }
 }
 </script>

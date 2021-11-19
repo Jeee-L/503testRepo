@@ -24,6 +24,7 @@
       </li>
     </ul>
   </div>
+  <hr>
 </template>
 
 <script>
@@ -78,7 +79,7 @@ export default {
         .post('http://127.0.0.1:5000/display_all_post')
         .then(res => {
           this.all_posts = res.data.all_posts;
-          console.log(res.data.all_posts)
+          // console.log(res.data.all_posts)
           this.message_display_all_post = res.data.message;
           this.current_user = sessionStorage.getItem("current_username");
         })

@@ -1,6 +1,7 @@
 <template>
   <div id="add_post" v-show = "current_login_or_not">
-    <h1>Add Post</h1>
+    <strong>Add Post</strong>
+    <br>
     <input type="text" v-model = "form.add_post_title"  placeholder="add_post_title" />
     <br>
     <input type="radio" v-model = "form.picked_tag"  id="open_world_role_play" value = "open_world_role_play" checked />
@@ -19,10 +20,8 @@
     <input type="button" id = "add_post_button" @click= "add_post" value = "add_post">
     <br>
     <strong>{{ message_add_post }}</strong>
-    <br>
+    <hr>
   </div>
-
-
 </template>
 
 <script>
@@ -60,7 +59,7 @@ export default {
       this.$bus.on('update_after_login', () => {
           this.current_login_or_not = true
       })
-
+      // console.log(sessionStorage.getItem("current_login_or_not"))
       if (sessionStorage.getItem("current_login_or_not")){
          this.current_login_or_not = true
       }

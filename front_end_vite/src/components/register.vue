@@ -10,7 +10,7 @@
       <input type="button" id = "register_button" @click= "user_register" value = "register">
       <br>
       <strong>{{ register_message }}</strong>
-  <br>
+      <hr>
   </div>
 
 </template>
@@ -46,11 +46,11 @@ export default {
   },
   mounted() {
       this.$bus.on('update_after_login', () => {
-          this.current_login_or_not = true
-      })
+          this.current_login_or_not = true;
+      });
 
       if (sessionStorage.getItem("current_login_or_not")){
-         this.current_login_or_not = true
+         this.current_login_or_not = true;
       }
   }
 }
