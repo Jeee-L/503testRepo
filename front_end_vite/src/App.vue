@@ -7,7 +7,7 @@ import login from "./components/login.vue";
 import display_all_post from "./components/display_all_post.vue";
 import add_post from "./components/add_post.vue";
 import logout from "./components/logout.vue";
-import add_friend from "./components/send_friend_request.vue";
+import send_friend_request from "./components/send_friend_request.vue";
 import notification from "./components/notification.vue";
 import display_friend_list from "./components/display_friend_list.vue";
 </script>
@@ -20,7 +20,7 @@ import display_friend_list from "./components/display_friend_list.vue";
   <logout/>
   <display_all_post/>
   <add_post/>
-  <add_friend/>
+  <send_friend_request/>
 </template>
 
 <style>
