@@ -4,7 +4,7 @@
       <ul>
         <li v-for = "(every_share_post_to_you, index) in all_share_post_to_you_list">
           <div>
-            <strong>{{"Shared by "  + every_share_post_to_you["username_this_post_shared_by"] }}</strong>
+            <strong>{{"Shared by "  + every_share_post_to_you["username_this_post_shared_from"] }}</strong>
             <br>
             <strong>{{ "Title: " + every_share_post_to_you["post_title"] + "; Tag: " + every_share_post_to_you["post_tag"]   }}</strong>
             <br>
@@ -17,7 +17,7 @@
             <br>
             <input
                 type="button"
-                @click="dismiss_shared_post(every_share_post_to_you['_id'], every_share_post_to_you['username_this_post_shared_by'] )"
+                @click="dismiss_shared_post(every_share_post_to_you['_id'], every_share_post_to_you['username_this_post_shared_from'] )"
                 value = "dismiss"/>
           </div>
         </li>
@@ -33,17 +33,17 @@ export default {
   name: "shared_post_to_you",
       data() {
     return {
-      all_share_post_to_you_list: {},
+      all_share_post_to_you_list: [],
       current_user: "",
       operation_message: "",
     }
   },
   methods: {
-    dismiss_shared_post(id, username_this_post_shared_by){
+    dismiss_shared_post(id, username_this_post_shared_from){
           axios
             .post('http://127.0.0.1:5000/dismiss_shared_post', {
               "current_user" : sessionStorage.getItem("current_username"),
-              "username_this_post_shared_by" : username_this_post_shared_by,
+              "username_this_post_shared_from" : username_this_post_shared_from,
               "dismiss_shared_post_id": id
             })
             .then(res => {

@@ -1,3 +1,4 @@
+import bson
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_pymongo import PyMongo
@@ -28,8 +29,8 @@ def register():
         'password': password_register,
         'friend_list': [],
         'notification_list': [],
-        'post_shared_to_you_list': {},
-        'post_you_share_to_other_list': {}
+        'post_shared_to_you_list': [],
+        'post_you_share_to_other_list': []
     }
     # check user existed or not
     # https://docs.mongodb.com/manual/reference/method/db.collection.findOne/
@@ -84,7 +85,9 @@ def add_post():
         'post_title': add_post_title,
         'post_tag': picked_tag,
         'post_content': add_post_content,
-        'creator': creator
+        'creator': creator,
+        'all_comments': [],
+        'all_likes': []
     }
     db_insert = post_collection.insert_one(post_info_to_insert)
     return jsonify({
@@ -261,13 +264,15 @@ def share_post():
     shared_to_username = post_data["shared_to_username"]
     shared_from_username = post_data["shared_from_username"]
     shared_post_id = post_data["shared_post_id"]
-    user_collection.update({"name": shared_to_username}, {'$set':
-        {"post_shared_to_you_list": {
-            shared_post_id: shared_from_username}}
+    user_collection.update({"name": shared_to_username}, {'$push':
+        {"post_shared_to_you_list":
+             {"shared_post_id" : shared_post_id,
+             "shared_from_username" : shared_from_username}}
     })
-    user_collection.update({"name": shared_from_username}, {'$set':
-        {"post_you_share_to_other_list": {
-            shared_post_id: shared_to_username}}
+    user_collection.update({"name": shared_from_username}, {'$push':
+        {"post_you_share_to_other_list":
+            {"shared_post_id" : shared_post_id,
+             "shared_to_username" : shared_to_username}}
     })
     return jsonify({
         'success': True,
@@ -285,34 +290,24 @@ def display_all_share_post_to_others():
     # print(current_user_info)
     # print(current_user_info['post_you_share_to_other_list'])
     if (current_user_info is not None) and (current_user_info['post_you_share_to_other_list']):
-        print(11111)
+        # print(11111)
         all_share_post_to_others = current_user_info['post_you_share_to_other_list']
         # print(all_share_post_to_others)
         # refer to https://docs.mongodb.com/manual/reference/operator/query/in/
-        all_post_ids = []
-        for every_id, every_username_this_post_share_to in all_share_post_to_others.items():
-            all_post_ids.append(every_id)
-        # print(all_post_ids)
-        all_object_id = []
-        print(all_object_id)
-        for every_id in all_post_ids:
-            all_object_id.append(ObjectId(every_id))
-        # get all share_post_to_others
         # refer to https://stackoverflow.com/questions/46752051/flask-pymongo-string-back-to-objectid
-        all_document_cursor = post_collection.find(
-            {'_id':
-                 {'$in': all_object_id}
-             })
-
-        for every_post in all_document_cursor:
-            every_post_info = every_post
-            # reference: https://blog.csdn.net/u011744758/article/details/50085013
-            # https://blog.csdn.net/GeekLeee/article/details/77767969
-            local_time = every_post_info["_id"].generation_time - datetime.timedelta(hours=6)
-            every_post_info["time"] = local_time.strftime("%Y-%m-%d %H:%M:%S")
-            every_post_info["_id"] = str(every_post_info["_id"])
-            every_post_info["username_this_post_shared_to"] = all_share_post_to_others[every_post_info["_id"]]
-            all_share_post_to_others_list[every_post_info["_id"]] = every_post_info
+        for every_shared_post in all_share_post_to_others:
+            # print(every_shared_post)
+            every_share_post_id = ObjectId(every_shared_post["shared_post_id"])
+            every_shared_post_info = post_collection.find_one({'_id': every_share_post_id})
+            if every_shared_post_info is not None:
+                every_post_info_returned = every_shared_post_info
+                # reference: https://blog.csdn.net/u011744758/article/details/50085013
+                # https://blog.csdn.net/GeekLeee/article/details/77767969
+                local_time = every_shared_post_info["_id"].generation_time - datetime.timedelta(hours=6)
+                every_post_info_returned["time"] = local_time.strftime("%Y-%m-%d %H:%M:%S")
+                every_post_info_returned["_id"] = str(every_shared_post_info["_id"])
+                every_post_info_returned["username_this_post_shared_to"] = every_shared_post['shared_to_username']
+                all_share_post_to_others_list[every_shared_post_info["_id"]] = every_post_info_returned
 
         return jsonify({
             'success': True,
@@ -330,26 +325,31 @@ def display_all_share_post_to_others():
 @app.route("/withdraw_shared_post", methods=['POST', 'GET'])
 def withdraw_shared_post():
     post_data = request.get_json()
-    username_share_this_post_to = post_data["username_share_this_post_to"]
+    print(post_data)
+    username_this_post_shared_to = post_data["username_this_post_shared_to"]
     current_user = post_data["current_user"]
     withdraw_shared_post_id = post_data["withdraw_shared_post_id"]
     # https://docs.mongodb.com/manual/reference/operator/update/unset/
-    post_you_share_to_other_list_withdraw_shared_post_id = "post_you_share_to_other_list" + "." + withdraw_shared_post_id
-    post_shared_to_you_list_withdraw_shared_post_id = "post_shared_to_you_list" + "." + withdraw_shared_post_id
     user_collection.update(
         {"name": current_user},
-        {"$unset":
-             {post_you_share_to_other_list_withdraw_shared_post_id: ""}
-         }
+        {"$pull":
+             {"post_you_share_to_other_list":
+                  {"shared_post_id" : withdraw_shared_post_id,
+                    "shared_to_username" : username_this_post_shared_to
+                   }
+              }
+        }
     )
-
     user_collection.update(
-        {"name": username_share_this_post_to},
-        {"$unset":
-             {post_shared_to_you_list_withdraw_shared_post_id: ""}
+        {"name": username_this_post_shared_to},
+        {"$pull":
+             {"post_shared_to_you_list":
+                  {"shared_post_id": withdraw_shared_post_id,
+                   "shared_from_username": current_user
+                   }
+              }
          }
     )
-
     return jsonify({
         'success': True,
         'message': 'Withdraw shared post successfully'
@@ -363,41 +363,33 @@ def display_all_share_post_to_you():
     current_user = post_data["current_user"]
     current_user_info = user_collection.find_one({"name": current_user})
     post_shared_to_you_list = {}
-    print(current_user_info)
+    # print(current_user_info)
     if (current_user_info is not None) and (current_user_info['post_shared_to_you_list']):
         # print(11111)
         all_share_post_to_you = current_user_info['post_shared_to_you_list']
         # print(all_share_post_to_others)
         # refer to https://docs.mongodb.com/manual/reference/operator/query/in/
-        all_post_ids = []
-        for every_id, every_username_this_post_share_by in all_share_post_to_you.items():
-            all_post_ids.append(every_id)
-        # print(all_post_ids)
-        all_object_id = []
-        for every_id in all_post_ids:
-            all_object_id.append(ObjectId(every_id))
-        # get all share_post_to_others
         # refer to https://stackoverflow.com/questions/46752051/flask-pymongo-string-back-to-objectid
-        all_document_cursor = post_collection.find(
-            {'_id':
-                 {'$in': all_object_id}
-             })
+        for every_shared_post in all_share_post_to_you:
+            every_share_post_id = ObjectId(every_shared_post["shared_post_id"])
+            every_shared_post_info = post_collection.find_one({'_id': every_share_post_id})
+            print(every_shared_post_info)
+            if every_shared_post_info is not None:
+                every_post_info_returned = every_shared_post_info
+                # reference: https://blog.csdn.net/u011744758/article/details/50085013
+                # https://blog.csdn.net/GeekLeee/article/details/77767969
+                local_time = every_shared_post_info["_id"].generation_time - datetime.timedelta(hours=6)
+                every_post_info_returned["time"] = local_time.strftime("%Y-%m-%d %H:%M:%S")
+                every_post_info_returned["_id"] = str(every_shared_post_info["_id"])
+                every_post_info_returned["username_this_post_shared_from"] = every_shared_post["shared_from_username"]
+                post_shared_to_you_list[every_shared_post_info["_id"]] = every_post_info_returned
 
-        for every_post in all_document_cursor:
-            every_post_info = every_post
-            # reference: https://blog.csdn.net/u011744758/article/details/50085013
-            # https://blog.csdn.net/GeekLeee/article/details/77767969
-            local_time = every_post_info["_id"].generation_time - datetime.timedelta(hours=6)
-            every_post_info["time"] = local_time.strftime("%Y-%m-%d %H:%M:%S")
-            every_post_info["_id"] = str(every_post_info["_id"])
-            every_post_info["username_this_post_shared_by"] = all_share_post_to_you[every_post_info["_id"]]
-            post_shared_to_you_list[every_post_info["_id"]] = every_post_info
-        print(post_shared_to_you_list)
         return jsonify({
             'success': True,
             'message': 'All shared post successfully displayed',
             "all_share_post_to_you_list": post_shared_to_you_list
         })
+
     else:
         return jsonify({
             'success': True,
@@ -409,31 +401,99 @@ def display_all_share_post_to_you():
 @app.route("/dismiss_shared_post", methods=['POST', 'GET'])
 def dismiss_shared_post():
     post_data = request.get_json()
-    username_this_post_shared_by = post_data["username_this_post_shared_by"]
+    username_this_post_shared_from = post_data["username_this_post_shared_from"]
     current_user = post_data["current_user"]
     dismiss_shared_post_id = post_data["dismiss_shared_post_id"]
-    # https://docs.mongodb.com/manual/reference/operator/update/unset/
-    post_you_share_to_other_list_dismiss_shared_post_id = "post_you_share_to_other_list" + "." + dismiss_shared_post_id
-    post_shared_to_you_list_dismiss_shared_post_id = "post_shared_to_you_list" + "." + dismiss_shared_post_id
     user_collection.update(
         {"name": current_user},
-        {"$unset":
-             {post_shared_to_you_list_dismiss_shared_post_id: ""}
-         }
+        {"$pull":
+             {"post_shared_to_you_list":
+                  {"shared_post_id" : dismiss_shared_post_id,
+                    "shared_from_username" : username_this_post_shared_from
+                   }
+              }
+        }
     )
 
     user_collection.update(
-        {"name": username_this_post_shared_by},
-        {"$unset":
-             {post_you_share_to_other_list_dismiss_shared_post_id: ""}
+        {"name": username_this_post_shared_from},
+        {"$pull":
+             {"post_you_share_to_other_list":
+                  {"shared_post_id": dismiss_shared_post_id,
+                   "shared_to_username": current_user
+                   }
+              }
          }
     )
-
     return jsonify({
         'success': True,
         'message': 'Dismiss shared post successfully'
     })
 
+
+@app.route("/display_all_comment", methods=['POST', 'GET'])
+def display_all_comment():
+    post_data = request.get_json()
+    post_id = post_data["postId"]
+    current_user = post_data["current_user"]
+    that_post = post_collection.find_one({"_id": ObjectId(post_id)})
+    all_comments = []
+    if that_post["all_comments"]:
+        all_comments = that_post["all_comments"]
+        return jsonify({
+            'success': True,
+            'message': 'Display all comments successfully',
+            'all_comments': all_comments
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'message': 'Display all comments successfully',
+            'all_comments': all_comments
+        })
+
+
+@app.route("/add_comment", methods=['POST', 'GET'])
+def add_comment():
+    post_data = request.get_json()
+    post_id = post_data["postId"]
+    current_user = post_data["current_user"]
+    add_comment_content = post_data["add_comment_content"]
+    # refer to https://stackoverflow.com/questions/10144852/how-can-i-create-unique-ids-for-embedded-documents-in-mongodb
+    that_post = post_collection.update(
+        {"_id": ObjectId(post_id)},
+        {"$push":
+            {"all_comments":
+                {"_id": str(ObjectId()),
+                "comment_creator": current_user,
+                "comment_content": add_comment_content
+                }
+            }
+        })
+
+    return jsonify({
+        'success': True,
+        'message': 'Add comment successfully',
+    })
+
+
+@app.route("/delete_comment", methods=['POST', 'GET'])
+def delete_comment():
+    post_data = request.get_json()
+    comment_id_to_delete = post_data["comment_id_to_delete"]
+    post_id = post_data["post_id"]
+    post_collection.update(
+        {"_id": ObjectId(post_id)},
+        {"$pull":
+             {"all_comments": {
+                 '_id' : comment_id_to_delete
+             }}
+        })
+
+    return jsonify({
+        'success': True,
+        'message': 'Delete comment successfully',
+    })
 
 ##88009
 # @app.route('/')

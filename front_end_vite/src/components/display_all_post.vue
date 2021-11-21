@@ -21,27 +21,20 @@
               <select v-model = "selected_friend">
                 <option v-for = "every_friend in friend_list" :value="every_friend">{{ every_friend }}</option>
               </select>
-              <input type="button" @click=  "share_post(every_post['_id'])" value = "share_post"/>
+              <input type="button" @click= "share_post(every_post['_id'])" value = "share_post"/>
             </div>
-
           </div>
           <br>
           <div v-show="this.current_user === every_post['creator']">
             <button type="button" @click="delete_post(every_post['_id'])">Delete Post</button><br>
-            New title: <input type="text" v-model = "edit_form.edit_title"  placeholder="new title" /><br>
-            New content: <textarea v-model = "edit_form.edit_content" placeholder="new content"></textarea><br>
-            New tag:
-            <br>
-            <input type="radio" v-model = "edit_form.edit_tag"  id="open_world_role_play" value = "open_world_role_play" checked />
-            <label for = "open_world_role_play">open_world_role_play</label>
-            <br>
-            <input type="radio" v-model = "edit_form.edit_tag" id="board_game" value = "board_game" />
-            <label for = "board_game">board_game</label>
-            <br>
-            <input type="radio" v-model = "edit_form.edit_tag" id="side_scrolling" value = "side_scrolling" />
-            <label for = "side_scrolling">side_scrolling</label>
-            <br>
-            <button type="button" @click="edit_post(every_post['_id'])">Submit Edit Post</button><br>
+            <edit_post :postId="every_post['_id']"/>
+          </div>
+          <br>
+          <div>
+            <div id = "comments_and_like_node" v-show= "current_user">
+              <comments :postId="every_post['_id']"/>
+              <likes :postId="every_post['_id']"/>
+            </div>
           </div>
         </div>
       </li>
@@ -52,7 +45,15 @@
 
 <script>
 import axios from "axios";
+import edit_post from "./edit_post.vue";
+import comments from "./comments.vue";
+import likes from "./likes.vue";
 export default {
+  components: {
+    edit_post,
+    comments,
+    likes
+  },
   name: "display_all_post",
   data() {
     return {
@@ -62,12 +63,6 @@ export default {
       operation_message: "",
       selected_friend: "",
       friend_list: "",
-      edit_form:{
-        edit_title: "",
-        edit_content: "",
-        creator: "",
-        edit_tag: "",
-      },
     }
   },
   methods: {
@@ -86,19 +81,7 @@ export default {
               console.log(error)
             });
     },
-    edit_post(id){
-      this.edit_form.creator = this.current_user;
-      axios
-        .post('http://127.0.0.1:5000/edit_post', {"edit_id":id, "edit_form":this.edit_form})
-        .then(res => {
-          console.log(res.data);
-          location.reload();
-          this.operation_message = res.data.message;
-        })
-        .catch(error => {
-          console.log(error)
-        });
-    },
+   
     share_post(id) {
       axios
         .post('http://127.0.0.1:5000/share_post', {
@@ -107,6 +90,7 @@ export default {
           "shared_from_username" : this.current_user,
         })
         .then(res => {
+          location.reload();
           this.operation_message = res.data.message;
         })
         .catch(error => {
@@ -130,6 +114,13 @@ export default {
           console.log(error)
         });
 
+      this.$bus.on('update_after_login', () => {
+         this.current_user = sessionStorage.getItem("current_username");
+      })
+      // console.log(sessionStorage.getItem("current_login_or_not"))
+      if (sessionStorage.getItem("current_login_or_not")){
+         this.current_user = sessionStorage.getItem("current_username");
+      }
 
     this.$bus.on('update_after_add_post', () => {
       axios

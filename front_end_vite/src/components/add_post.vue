@@ -33,7 +33,7 @@ export default {
     return {
       form: {
         add_post_title: "",
-        picked_tag: "",
+        picked_tag: "open_world_role_play",
         add_post_content: "",
         creator: ""
       },

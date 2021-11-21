@@ -33,7 +33,7 @@ export default {
   name: "shared_post_to_others",
     data() {
     return {
-      all_share_post_to_others_list: {},
+      all_share_post_to_others_list: [],
       current_user: "",
       operation_message: ""
     }
@@ -43,7 +43,7 @@ export default {
           axios
             .post('http://127.0.0.1:5000/withdraw_shared_post', {
               "current_user" : sessionStorage.getItem("current_username"),
-              "username_share_this_post_to" : username_this_post_shared_to,
+              "username_this_post_shared_to" : username_this_post_shared_to,
               "withdraw_shared_post_id": id
             })
             .then(res => {
@@ -64,7 +64,7 @@ export default {
         })
         .then(res => {
           this.all_share_post_to_others_list = res.data.all_share_post_to_others_list;
-          console.log(res.data.all_share_post_to_others_list)
+          // console.log(res.data.all_share_post_to_others_list)
           this.operation_message = res.data.message;
           this.current_user = sessionStorage.getItem("current_username");
         })
