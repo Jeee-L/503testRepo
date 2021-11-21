@@ -71,6 +71,23 @@ export default {
         .catch(error => {
           console.log(error)
         });
+
+    this.$bus.on('update_after_login', () => {
+         this.current_user = sessionStorage.getItem("current_username");
+      axios
+        .post('http://127.0.0.1:5000/display_all_share_post_to_you', {
+          "current_user" : sessionStorage.getItem("current_username")
+        })
+        .then(res => {
+          this.all_share_post_to_you_list = res.data.all_share_post_to_you_list;
+          // console.log(res.data.all_share_post_to_others_list)
+          this.operation_message = res.data.message;
+          this.current_user = sessionStorage.getItem("current_username");
+        })
+        .catch(error => {
+          console.log(error)
+        });
+    })
   }
 }
 </script>

@@ -261,9 +261,11 @@ def unfriend():
 @app.route("/share_post", methods=['POST', 'GET'])
 def share_post():
     post_data = request.get_json()
+    # handle input
     shared_to_username = post_data["shared_to_username"]
     shared_from_username = post_data["shared_from_username"]
     shared_post_id = post_data["shared_post_id"]
+
     user_collection.update({"name": shared_to_username}, {'$push':
         {"post_shared_to_you_list":
              {"shared_post_id" : shared_post_id,
@@ -325,7 +327,8 @@ def display_all_share_post_to_others():
 @app.route("/withdraw_shared_post", methods=['POST', 'GET'])
 def withdraw_shared_post():
     post_data = request.get_json()
-    print(post_data)
+    # print(post_data)
+    # handle input
     username_this_post_shared_to = post_data["username_this_post_shared_to"]
     current_user = post_data["current_user"]
     withdraw_shared_post_id = post_data["withdraw_shared_post_id"]
@@ -456,6 +459,7 @@ def display_all_comment():
 @app.route("/add_comment", methods=['POST', 'GET'])
 def add_comment():
     post_data = request.get_json()
+    #handle input
     post_id = post_data["postId"]
     current_user = post_data["current_user"]
     add_comment_content = post_data["add_comment_content"]
@@ -486,7 +490,7 @@ def delete_comment():
         {"_id": ObjectId(post_id)},
         {"$pull":
              {"all_comments": {
-                 '_id' : comment_id_to_delete
+                 '_id': comment_id_to_delete
              }}
         })
 
@@ -495,13 +499,78 @@ def delete_comment():
         'message': 'Delete comment successfully',
     })
 
-##88009
-# @app.route('/')
-# def hello_world():
-#     dbfindresult = mongo.db.testdb.find()
-#     for r in dbfindresult:
-#         print(r['name'])
-#     return "Hello world!"
+
+@app.route("/add_like", methods=['POST', 'GET'])
+def add_like():
+    post_data = request.get_json()
+    # handle input
+    current_user = post_data["current_user"]
+    post_id = post_data["post_id"]
+
+    # find if current user liked it or not
+    that_post = post_collection.find_one({"_id": ObjectId(post_id)})
+    all_likes = that_post["all_likes"]
+    if current_user not in all_likes:
+        post_collection.update(
+            {"_id": ObjectId(post_id)},
+            {"$push":
+                 {"all_likes": current_user}
+            })
+
+    return jsonify({
+        'success': True,
+        'message': 'Add like successfully'
+    })
+
+
+@app.route("/fetch_like", methods=['POST', 'GET'])
+def fetch_like():
+    post_data = request.get_json()
+    # handle input
+    current_user = post_data["current_user"]
+    post_id = post_data["post_id"]
+    # get that post
+    that_post = post_collection.find_one({"_id": ObjectId(post_id)})
+    all_likes = that_post["all_likes"]
+    # number of likes
+    number_of_likes = len(all_likes)
+    # if the user already liked th post
+    # user can not like again
+    # user can only unlike the post
+    liked_or_not = False
+    if current_user in all_likes:
+        liked_or_not = True
+    return jsonify({
+        'success': True,
+        'message': 'Fetch like successfully',
+        "number_of_likes": number_of_likes,
+        "liked_or_not": liked_or_not
+    })
+
+
+@app.route("/unlike", methods=['POST', 'GET'])
+def unlike():
+    post_data = request.get_json()
+    # handle input
+    current_user = post_data["current_user"]
+    post_id = post_data["post_id"]
+
+    # find if current user liked it or not
+    that_post = post_collection.find_one({"_id": ObjectId(post_id)})
+    all_likes = that_post["all_likes"]
+    if current_user in all_likes:
+        post_collection.update(
+            {"_id": ObjectId(post_id)},
+            {"$pull":
+                 {"all_likes": current_user}
+            })
+
+    return jsonify({
+        'success': True,
+        'message': 'Unlike successfully'
+    })
+
+
 
 if __name__ == '__main__':
     app.run()

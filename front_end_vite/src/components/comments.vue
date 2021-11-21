@@ -86,7 +86,7 @@ export default {
           // console.log(res.data.all_posts)
           this.operation_message = res.data.message;
           this.comment_list = res.data.all_comments;
-          console.log( this.comment_list)
+          // console.log( this.comment_list)
           this.current_user = sessionStorage.getItem("current_username");
         })
         .catch(error => {
