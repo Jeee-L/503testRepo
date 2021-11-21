@@ -10,10 +10,14 @@ import logout from "./components/logout.vue";
 import send_friend_request from "./components/send_friend_request.vue";
 import notification from "./components/notification.vue";
 import display_friend_list from "./components/display_friend_list.vue";
+import display_shared_post_to_others from "./components/display_shared_post_to_others.vue";
+import display_shared_post_to_you from "./components/display_shared_post_to_you.vue";
 </script>
 
 <template>
   <notification/>
+  <display_shared_post_to_others/>
+  <display_shared_post_to_you/>
   <display_friend_list/>
   <register/>
   <login/>

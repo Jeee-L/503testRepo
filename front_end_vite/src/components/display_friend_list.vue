@@ -21,7 +21,7 @@ export default {
   name: "display_friend_list",
   data() {
     return {
-      friend_list: [],
+      friend_list: {},
       current_user: "",
       current_login_or_not: false
     }

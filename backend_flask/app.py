@@ -27,7 +27,9 @@ def register():
         'name': username_register,
         'password': password_register,
         'friend_list': [],
-        'notification_list': []
+        'notification_list': [],
+        'post_shared_to_you_list': {},
+        'post_you_share_to_other_list': {}
     }
     # check user existed or not
     # https://docs.mongodb.com/manual/reference/method/db.collection.findOne/
@@ -95,17 +97,17 @@ def add_post():
 @app.route("/display_all_post", methods=['POST', 'GET'])
 def display_all_post():
     post_data = request.get_json()
-    # add_post_title = post_data.get('add_post_title')
-    # picked_tag = post_data.get('picked_tag')
-    # add_post_content = post_data.get('add_post_content')
-    # post_info_to_insert = {
-    #     'post_title': add_post_title,
-    #     'tag': picked_tag,
-    #     'post_content': add_post_content
-    # }
+    # get current user friend list to share post
+    current_user = post_data["current_user"]
+    # print(current_user)
+    current_user_info = user_collection.find_one({"name": current_user})
+    current_user_friend_list = []
+    if current_user_info is not None:
+        current_user_friend_list = current_user_info['friend_list']
+    # print(current_user_friend_list)
+    # get all post
     all_document_cursor = post_collection.find({})
     all_posts = []
-
     for every_post in all_document_cursor:
         every_post_info = every_post
         # reference: https://blog.csdn.net/u011744758/article/details/50085013
@@ -118,7 +120,8 @@ def display_all_post():
     return jsonify({
         'success': True,
         'message': 'All post successfully displayed',
-        "all_posts": all_posts
+        "all_posts": all_posts,
+        "friend_list": current_user_friend_list
     })
 
 
@@ -138,10 +141,12 @@ def edit_post():
     id = post_data["edit_id"]
     new_title = post_data["edit_form"]["edit_title"]
     new_content = post_data["edit_form"]["edit_content"]
+    new_tag = post_data["edit_form"]["edit_tag"]
     creator = post_data["edit_form"]["creator"]
     post_collection.update({"_id": ObjectId(id)}, {
         'post_title': new_title,
         'post_content': new_content,
+        'post_tag': new_tag,
         'creator': creator,
     })
     return jsonify({
@@ -157,7 +162,8 @@ def send_friend_request():
     username_to_receive_friend_request = post_data["username_to_receive_friend_request"]
     # print(post_data)
     user_collection.update({"name": username_to_receive_friend_request}, {'$push':
-        {'notification_list': username_to_send_friend_request}
+        {
+            'notification_list': username_to_send_friend_request}
     })
     return jsonify({
         'success': True,
@@ -186,9 +192,9 @@ def refuse():
     refuse_username = post_data["refuse_username"]
     current_user = post_data["current_user"]
     current_user_info = user_collection.update({"name": current_user},
-        {'$pull':
-            {"notification_list": refuse_username}
-        })
+                                               {'$pull':
+                                                    {"notification_list": refuse_username}
+                                                })
     return jsonify({
         'success': True,
         'message': 'Refused friend request successfully'
@@ -201,15 +207,15 @@ def accept():
     accept_username = post_data["accept_username"]
     current_user = post_data["current_user"]
     user_collection.update({"name": current_user},
-        {'$pull':
-            {"notification_list" : accept_username}
-        })
+                           {'$pull':
+                                {"notification_list": accept_username}
+                            })
     user_collection.update({"name": current_user}, {'$push':
-        {'friend_list': accept_username}
-    })
+                                                        {'friend_list': accept_username}
+                                                    })
     user_collection.update({"name": accept_username}, {'$push':
-        {'friend_list': current_user}
-    })
+                                                           {'friend_list': current_user}
+                                                       })
     return jsonify({
         'success': True,
         'message': 'accept friend request successfully'
@@ -226,7 +232,7 @@ def display_friend_list():
     return jsonify({
         'success': True,
         'message': 'Display friend list successfully',
-        'friend_list' : friend_list
+        'friend_list': friend_list
     })
 
 
@@ -236,16 +242,196 @@ def unfriend():
     username_to_unfriend = post_data["username_to_unfriend"]
     current_user = post_data["current_user"]
     user_collection.update({"name": current_user},
-        {'$pull':
-            {"friend_list": username_to_unfriend}
-        })
+                           {'$pull':
+                                {"friend_list": username_to_unfriend}
+                            })
     user_collection.update({"name": username_to_unfriend},
-        {'$pull':
-            {'friend_list': current_user}
-        })
+                           {'$pull':
+                                {'friend_list': current_user}
+                            })
     return jsonify({
         'success': True,
         'message': 'Unfriend successfully'
+    })
+
+
+@app.route("/share_post", methods=['POST', 'GET'])
+def share_post():
+    post_data = request.get_json()
+    shared_to_username = post_data["shared_to_username"]
+    shared_from_username = post_data["shared_from_username"]
+    shared_post_id = post_data["shared_post_id"]
+    user_collection.update({"name": shared_to_username}, {'$set':
+        {"post_shared_to_you_list": {
+            shared_post_id: shared_from_username}}
+    })
+    user_collection.update({"name": shared_from_username}, {'$set':
+        {"post_you_share_to_other_list": {
+            shared_post_id: shared_to_username}}
+    })
+    return jsonify({
+        'success': True,
+        'message': 'Post shared successfully'
+    })
+
+
+@app.route("/display_all_share_post_to_others", methods=['POST', 'GET'])
+def display_all_share_post_to_others():
+    post_data = request.get_json()
+    # get current user friend list to share post
+    current_user = post_data["current_user"]
+    current_user_info = user_collection.find_one({"name": current_user})
+    all_share_post_to_others_list = {}
+    # print(current_user_info)
+    # print(current_user_info['post_you_share_to_other_list'])
+    if (current_user_info is not None) and (current_user_info['post_you_share_to_other_list']):
+        print(11111)
+        all_share_post_to_others = current_user_info['post_you_share_to_other_list']
+        # print(all_share_post_to_others)
+        # refer to https://docs.mongodb.com/manual/reference/operator/query/in/
+        all_post_ids = []
+        for every_id, every_username_this_post_share_to in all_share_post_to_others.items():
+            all_post_ids.append(every_id)
+        # print(all_post_ids)
+        all_object_id = []
+        print(all_object_id)
+        for every_id in all_post_ids:
+            all_object_id.append(ObjectId(every_id))
+        # get all share_post_to_others
+        # refer to https://stackoverflow.com/questions/46752051/flask-pymongo-string-back-to-objectid
+        all_document_cursor = post_collection.find(
+            {'_id':
+                 {'$in': all_object_id}
+             })
+
+        for every_post in all_document_cursor:
+            every_post_info = every_post
+            # reference: https://blog.csdn.net/u011744758/article/details/50085013
+            # https://blog.csdn.net/GeekLeee/article/details/77767969
+            local_time = every_post_info["_id"].generation_time - datetime.timedelta(hours=6)
+            every_post_info["time"] = local_time.strftime("%Y-%m-%d %H:%M:%S")
+            every_post_info["_id"] = str(every_post_info["_id"])
+            every_post_info["username_this_post_shared_to"] = all_share_post_to_others[every_post_info["_id"]]
+            all_share_post_to_others_list[every_post_info["_id"]] = every_post_info
+
+        return jsonify({
+            'success': True,
+            'message': 'All shared post successfully displayed',
+            "all_share_post_to_others_list": all_share_post_to_others_list
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'message': 'log in to see your post shared to others',
+            "all_share_post_to_others_list": all_share_post_to_others_list
+        })
+
+
+@app.route("/withdraw_shared_post", methods=['POST', 'GET'])
+def withdraw_shared_post():
+    post_data = request.get_json()
+    username_share_this_post_to = post_data["username_share_this_post_to"]
+    current_user = post_data["current_user"]
+    withdraw_shared_post_id = post_data["withdraw_shared_post_id"]
+    # https://docs.mongodb.com/manual/reference/operator/update/unset/
+    post_you_share_to_other_list_withdraw_shared_post_id = "post_you_share_to_other_list" + "." + withdraw_shared_post_id
+    post_shared_to_you_list_withdraw_shared_post_id = "post_shared_to_you_list" + "." + withdraw_shared_post_id
+    user_collection.update(
+        {"name": current_user},
+        {"$unset":
+             {post_you_share_to_other_list_withdraw_shared_post_id: ""}
+         }
+    )
+
+    user_collection.update(
+        {"name": username_share_this_post_to},
+        {"$unset":
+             {post_shared_to_you_list_withdraw_shared_post_id: ""}
+         }
+    )
+
+    return jsonify({
+        'success': True,
+        'message': 'Withdraw shared post successfully'
+    })
+
+
+@app.route("/display_all_share_post_to_you", methods=['POST', 'GET'])
+def display_all_share_post_to_you():
+    post_data = request.get_json()
+    # get current user friend list to share post
+    current_user = post_data["current_user"]
+    current_user_info = user_collection.find_one({"name": current_user})
+    post_shared_to_you_list = {}
+    print(current_user_info)
+    if (current_user_info is not None) and (current_user_info['post_shared_to_you_list']):
+        # print(11111)
+        all_share_post_to_you = current_user_info['post_shared_to_you_list']
+        # print(all_share_post_to_others)
+        # refer to https://docs.mongodb.com/manual/reference/operator/query/in/
+        all_post_ids = []
+        for every_id, every_username_this_post_share_by in all_share_post_to_you.items():
+            all_post_ids.append(every_id)
+        # print(all_post_ids)
+        all_object_id = []
+        for every_id in all_post_ids:
+            all_object_id.append(ObjectId(every_id))
+        # get all share_post_to_others
+        # refer to https://stackoverflow.com/questions/46752051/flask-pymongo-string-back-to-objectid
+        all_document_cursor = post_collection.find(
+            {'_id':
+                 {'$in': all_object_id}
+             })
+
+        for every_post in all_document_cursor:
+            every_post_info = every_post
+            # reference: https://blog.csdn.net/u011744758/article/details/50085013
+            # https://blog.csdn.net/GeekLeee/article/details/77767969
+            local_time = every_post_info["_id"].generation_time - datetime.timedelta(hours=6)
+            every_post_info["time"] = local_time.strftime("%Y-%m-%d %H:%M:%S")
+            every_post_info["_id"] = str(every_post_info["_id"])
+            every_post_info["username_this_post_shared_by"] = all_share_post_to_you[every_post_info["_id"]]
+            post_shared_to_you_list[every_post_info["_id"]] = every_post_info
+        print(post_shared_to_you_list)
+        return jsonify({
+            'success': True,
+            'message': 'All shared post successfully displayed',
+            "all_share_post_to_you_list": post_shared_to_you_list
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'message': 'log in to see your post others share to you',
+            "all_share_post_to_you_list": post_shared_to_you_list
+        })
+
+
+@app.route("/dismiss_shared_post", methods=['POST', 'GET'])
+def dismiss_shared_post():
+    post_data = request.get_json()
+    username_this_post_shared_by = post_data["username_this_post_shared_by"]
+    current_user = post_data["current_user"]
+    dismiss_shared_post_id = post_data["dismiss_shared_post_id"]
+    # https://docs.mongodb.com/manual/reference/operator/update/unset/
+    post_you_share_to_other_list_dismiss_shared_post_id = "post_you_share_to_other_list" + "." + dismiss_shared_post_id
+    post_shared_to_you_list_dismiss_shared_post_id = "post_shared_to_you_list" + "." + dismiss_shared_post_id
+    user_collection.update(
+        {"name": current_user},
+        {"$unset":
+             {post_shared_to_you_list_dismiss_shared_post_id: ""}
+         }
+    )
+
+    user_collection.update(
+        {"name": username_this_post_shared_by},
+        {"$unset":
+             {post_you_share_to_other_list_dismiss_shared_post_id: ""}
+         }
+    )
+
+    return jsonify({
+        'success': True,
+        'message': 'Dismiss shared post successfully'
     })
 
 

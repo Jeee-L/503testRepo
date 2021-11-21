@@ -13,7 +13,7 @@
     <input type="radio" v-model = "form.picked_tag" id="side_scrolling" value = "side_scrolling" />
     <label for = "side_scrolling">side_scrolling</label>
     <br>
-    <strong>{{ picked_tag }}</strong>
+    <strong>{{ form.picked_tag }}</strong>
     <br>
     <textarea id = "add_post_content" v-model = "form.add_post_content" placeholder="post content"></textarea>
     <br>

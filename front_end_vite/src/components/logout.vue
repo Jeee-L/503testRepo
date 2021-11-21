@@ -3,6 +3,7 @@
       <input type="button" @click= "user_logout"  value = "logout">
   </div>
   <strong>{{operation_message }}</strong>
+  <hr>
 </template>
 
 <script>
